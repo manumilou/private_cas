@@ -1,0 +1,5 @@
+name = Private CAS
+core = 7.x
+package = Node Access
+
+configure = admin/config/people/private_cas
