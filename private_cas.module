@@ -52,16 +52,14 @@ function private_cas_menu() {
  * Implements hook_init().
  */
 function private_cas_init() {
-  global $user;
-
   // Let Drush bypass password protection.
   if (function_exists('drush_main')) {
     return;
   }
 
-  //if(user_access('bypass cas protection')) {
-    //return;
-  //}
+  if(user_access('bypass cas protection')) {
+    return;
+  }
 
   // Check first if we are dealing with a node
   if(arg(0) == 'node' && is_numeric(arg(1))) {
@@ -251,8 +249,6 @@ function theme_private_cas_node_link() {
 }
 
 function private_cas_auth($nid, $groups = array()) {
-  global $user;
-  
   if(!cas_phpcas_load()) {
     return;
   }
