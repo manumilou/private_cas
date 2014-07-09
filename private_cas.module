@@ -23,6 +23,10 @@ function private_cas_permission() {
       'title' => t('Mark content as private'),
       'description' => t('Make content only viewable by people authenticated with cas'),
     ),
+    'bypass cas protection' => array(
+      'title' => t('Bypass CAS protection'),
+      'description' => t('Bypass CAS protection for protected content.'),
+    ),
   );
 }
 
@@ -42,6 +46,34 @@ function private_cas_menu() {
     'file path' => drupal_get_path('module', 'private_cas'),
   );
   return $items;
+}
+
+/**
+ * Implements hook_init().
+ */
+function private_cas_init() {
+  global $user;
+
+  // Let Drush bypass password protection.
+  if (function_exists('drush_main')) {
+    return;
+  }
+
+  //if(user_access('bypass cas protection')) {
+    //return;
+  //}
+
+  // Check first if we are dealing with a node
+  if(arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = node_load(arg(1));
+    // Is this node type supposed to be protected?
+    if(variable_get('private_cas_' . $node->type, PRIVATE_CAS_DISABLED) && isset($node->private_cas) && $node->private_cas == 1){
+      // Protect only the view operation
+      if(arg(2) == NULL) {
+        private_cas_auth(arg(1));
+      }
+    }
+  }
 }
 
 /**
@@ -218,6 +250,33 @@ function theme_private_cas_node_link() {
   return theme('image', $vars);
 }
 
+function private_cas_auth($nid, $groups = array()) {
+  global $user;
+  
+  if(!cas_phpcas_load()) {
+    return;
+  }
 
+  // Start a drupal session
+  drupal_session_start();
+  _cas_single_sign_out_save_ticket();  // We use this later for CAS 3 logoutRequests
+
+  // Initialize phpCAS.
+  cas_phpcas_init();
+
+  $force_authentication = TRUE;
+  // We're going to try phpCAS auth test
+  if ($force_authentication) {
+    phpCAS::forceAuthentication();
+  }
+  else {
+    $logged_in = phpCAS::checkAuthentication();
+
+    // We're done cause we're not logged in.
+    if (!$logged_in) {
+      return;
+    }
+  }
+}
 
 
