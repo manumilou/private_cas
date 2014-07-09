@@ -22,6 +22,11 @@ function private_cas_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'cas_groups' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'CAS groups allowed to access the content.',
+      ),
     ),
     'primary key' => array('nid'),
   );

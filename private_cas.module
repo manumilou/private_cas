@@ -64,16 +64,42 @@ function private_cas_form_alter(&$form, &$form_state, $form_id) {
         $privacy = isset($node->private_cas) ? $node->private_cas : 0;
       }
 
+      $cas_groups = $node->cas_groups;
+
       if (user_access('mark content as private') && $default != PRIVATE_CAS_ALWAYS) {
-        $form['options']['private_cas'] = array(
+        $form['private_cas'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Privacy (CAS)'),
+          '#collapsible' => TRUE,
+          '#group' => 'additional_settings',
+          '#attributes' => array(
+            'class' => array('private-cas-form'),
+          ),
+          '#attached' => array(
+            'js' => array(/*drupal_get_path('module', 'media_url') . '/copy.js'*/),
+          ),
+          '#access' => user_access('mark content as private'),
+          '#weight' => -30,
+          '#tree' => TRUE,
+        );
+
+        $form['private_cas']['private'] = array(
           '#type' => 'checkbox',
           '#title' => t('Make this post private'),
+          '#description' => t('When checked, only users authenticated with CAS will be able to see this post.'),
           '#attributes' => array('title' => t('When checked, only users authenticated with CAS will be able to see this post.')),
           '#default_value' => $privacy,
         );
+        $form['private_cas']['cas_groups'] = array(
+          '#type' => 'textarea',
+          '#rows' => 5,
+          '#title' => t('CAS groups to grant access to'),
+          '#description' => t('If no group is specified, access will be granted to all CAS groups.'),
+          '#default_value' => json_decode($cas_groups),
+        );
       }
       else {
-        $form['private_cas'] = array(
+        $form['private_cas']['private'] = array(
           '#type' => 'value',
           '#value' => $privacy,
         );
@@ -108,6 +134,7 @@ function private_cas_node_load($nodes, $types) {
   $result = db_query('SELECT * FROM {private_cas} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
   foreach ($result as $record) {
     $nodes[$record->nid]->private_cas = $record->private_cas;
+    $nodes[$record->nid]->cas_groups = json_encode($record->cas_groups);
   }
 }
 
@@ -136,7 +163,8 @@ function private_cas_node_update($node) {
       ->key(array('nid' => $node->nid))
       ->fields(array(
         'nid' => $node->nid,
-        'private_cas' => (int)$node->private_cas,
+        'private_cas' => (int)$node->private_cas['private'],
+        'cas_groups' => $node->private_cas['cas_groups'],
       ))
       ->execute();
 
