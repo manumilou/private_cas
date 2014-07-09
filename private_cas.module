@@ -270,7 +270,8 @@ function private_cas_auth($nid, $groups = array()) {
 
     // We're done cause we're not logged in.
     if (!$logged_in) {
-      return;
+      drupal_access_denied();
+      exit();
     }
   }
 }
