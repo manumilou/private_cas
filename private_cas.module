@@ -96,9 +96,9 @@ function private_cas_form_alter(&$form, &$form_state, $form_id) {
         $privacy = isset($node->private_cas) ? $node->private_cas : 0;
       }
 
-      $cas_groups = $node->cas_groups;
-
       if (user_access('mark content as private') && $default != PRIVATE_CAS_ALWAYS) {
+        $cas_groups = isset($node->cas_groups) ? $node->cas_groups : '';
+
         $form['private_cas'] = array(
           '#type' => 'fieldset',
           '#title' => t('Privacy (CAS)'),
