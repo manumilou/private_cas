@@ -1,5 +1,8 @@
 name = Private CAS
+description = Allows users to mark content as private, and hide that content from visitors not authenticated with CAS.
 core = 7.x
 package = Node Access
+
+dependencies[] = cas
 
 configure = admin/config/people/private_cas

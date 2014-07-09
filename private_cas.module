@@ -39,11 +39,9 @@ function private_cas_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('private_cas_general_settings'),
     'file' => 'private_cas.admin.inc',
-    'file path' => drupal_get_path('module', 'pp_contact'),
+    'file path' => drupal_get_path('module', 'private_cas'),
   );
-
   return $items;
- 
 }
 
 /**
