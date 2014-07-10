@@ -164,7 +164,7 @@ function private_cas_node_load($nodes, $types) {
   $result = db_query('SELECT * FROM {private_cas} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
   foreach ($result as $record) {
     $nodes[$record->nid]->private_cas = $record->private_cas;
-    $nodes[$record->nid]->cas_groups = json_encode($record->cas_groups);
+    $nodes[$record->nid]->cas_groups = $record->cas_groups;
   }
 }
 
