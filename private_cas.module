@@ -68,7 +68,7 @@ function private_cas_init() {
     if(variable_get('private_cas_' . $node->type, PRIVATE_CAS_DISABLED) && isset($node->private_cas) && $node->private_cas == 1){
       // Protect only the view operation
       if(arg(2) == NULL) {
-        private_cas_auth(arg(1));
+        private_cas_auth($node);
       }
     }
   }
@@ -248,10 +248,15 @@ function theme_private_cas_node_link() {
   return theme('image', $vars);
 }
 
-function private_cas_auth($nid, $groups = array()) {
+/**
+ * Authenticate against CAS.
+ */
+function private_cas_auth($node) {
   if(!cas_phpcas_load()) {
     return;
   }
+
+  dd($node);
 
   // Start a drupal session
   drupal_session_start();
@@ -260,10 +265,28 @@ function private_cas_auth($nid, $groups = array()) {
   // Initialize phpCAS.
   cas_phpcas_init();
 
+  $validate_url = variable_get('cas_service_validate_url', NULL);
+  if($validate_url) {
+    phpCAS::setServerServiceValidateURL($validate_url);
+  }
+
   $force_authentication = TRUE;
-  // We're going to try phpCAS auth test
+  // Force the authentication
   if ($force_authentication) {
     phpCAS::forceAuthentication();
+    // $groups = _mock_cas_response_groups();
+    $groups = phpCAS::getAttribute('group');
+    dd($groups);
+    // Check user groups and compare with the groups allowed to access the node
+    $allowed_groups = explode(';', $node->cas_groups);
+    foreach($allowed_groups as $allowed_group) {
+      if(in_array($allowed_group, $groups)) {
+        // If we found a matching group, break out of the loop.
+        break;
+      }
+      drupal_access_denied();
+      exit();
+    }
   }
   else {
     $logged_in = phpCAS::checkAuthentication();
@@ -274,6 +297,9 @@ function private_cas_auth($nid, $groups = array()) {
       exit();
     }
   }
+  return TRUE;
 }
 
-
+function _mock_cas_response_groups() {
+  return array('CAS_GROUP_STUDENTS_MTA');
+}
