@@ -39,7 +39,7 @@ function private_cas_menu() {
 
   $items['admin/config/people/private_cas'] = array(
     'title' => 'Private (CAS)',
-    'description' => "",
+    'description' => 'Configure the private CAS module.',
     'access arguments' => array('administer site'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('private_cas_general_settings'),
