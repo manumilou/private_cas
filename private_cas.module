@@ -300,6 +300,13 @@ function private_cas_deny_access() {
  *   The node to check authorization for.
  */
 function private_cas_check_group_authorization($node) {
+  $group_authorization = variable_get('private_cas_group_authorization', 1);
+
+  // If group authorization is not enabled, just grant access
+  if(!$group_authorization) {
+    return TRUE;
+  }
+
   // Fetch group node from the attributes
   $groups = phpCAS::getAttribute('group');
   // Check user groups and compare with the groups allowed to access the node
@@ -316,6 +323,3 @@ function private_cas_check_group_authorization($node) {
   return TRUE;
 }
 
-function _mock_cas_response_groups() {
-  return array('CAS_GROUP_STUDENTS_MTA');
-}
