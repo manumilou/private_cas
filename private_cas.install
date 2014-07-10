@@ -42,6 +42,7 @@ function private_cas_uninstall() {
   foreach ($node_types as $node_type) {
     variable_del('private_cas_' . $node_type);
   }
+  variable_del('private_cas_group_authorization');
 }
 
 
