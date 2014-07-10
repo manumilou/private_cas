@@ -239,9 +239,9 @@ function private_cas_theme() {
  */
 function theme_private_cas_node_link() {
   $vars = array(
-    'path' => drupal_get_path('module', 'private_cas') . '/icon_key.gif',
-    'width' => '16',
-    'height' => '16',
+    'path' => drupal_get_path('module', 'private_cas') . '/lock_confirmed.png',
+    'width' => '24',
+    'height' => '24',
     'alt' => t('Private CAS'),
     'title' => t('This content is private.')
   );
