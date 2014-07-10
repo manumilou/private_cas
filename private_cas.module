@@ -5,6 +5,8 @@
  * It allows users to mark individual nodes as private.
  * Users authenticated with CAS can
  * read these nodes, while others cannot.
+ *
+ * @author: Emmanuel Milou <emmanuel.milou@savoirfairelinux.com>
  */
 
 define('PRIVATE_CAS_DISABLED', 0);
@@ -12,7 +14,6 @@ define('PRIVATE_CAS_ALLOWED', 1);
 define('PRIVATE_CAS_AUTOMATIC', 2);
 define('PRIVATE_CAS_ALWAYS', 3);
 define('PRIVATE_CAS_GRANT_ALL', 1);
-
 
 /**
  * Implements hook_permission().
@@ -95,8 +96,6 @@ function private_cas_form_alter(&$form, &$form_state, $form_id) {
       }
 
       if (user_access('mark content as private') && $default != PRIVATE_CAS_ALWAYS) {
-        $cas_groups = isset($node->cas_groups) ? $node->cas_groups : '';
-
         $form['private_cas'] = array(
           '#type' => 'fieldset',
           '#title' => t('Privacy (CAS)'),
@@ -123,9 +122,9 @@ function private_cas_form_alter(&$form, &$form_state, $form_id) {
         $form['private_cas']['cas_groups'] = array(
           '#type' => 'textarea',
           '#rows' => 5,
-          '#title' => t('CAS groups to grant access to'),
+          '#title' => '<span class="element-invisible">' . t('CAS groups to grant access to') . '</span>',
           '#description' => t('If no group is specified, access will be granted to all CAS groups.'),
-          '#default_value' => json_decode($cas_groups),
+          '#default_value' => isset($node->cas_groups) ? $node->cas_groups : '',
         );
       }
       else {
@@ -164,7 +163,7 @@ function private_cas_node_load($nodes, $types) {
   $result = db_query('SELECT * FROM {private_cas} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
   foreach ($result as $record) {
     $nodes[$record->nid]->private_cas = $record->private_cas;
-    $nodes[$record->nid]->cas_groups = $record->cas_groups;
+    $nodes[$record->nid]->cas_groups = json_decode($record->cas_groups);
   }
 }
 
@@ -194,7 +193,7 @@ function private_cas_node_update($node) {
       ->fields(array(
         'nid' => $node->nid,
         'private_cas' => (int)$node->private_cas['private'],
-        'cas_groups' => $node->private_cas['cas_groups'],
+        'cas_groups' => json_encode(trim($node->private_cas['cas_groups'])),
       ))
       ->execute();
 
@@ -256,8 +255,6 @@ function private_cas_auth($node) {
     return;
   }
 
-  dd($node);
-
   // Start a drupal session
   drupal_session_start();
   _cas_single_sign_out_save_ticket();  // We use this later for CAS 3 logoutRequests
@@ -274,28 +271,47 @@ function private_cas_auth($node) {
   // Force the authentication
   if ($force_authentication) {
     phpCAS::forceAuthentication();
-    // $groups = _mock_cas_response_groups();
-    $groups = phpCAS::getAttribute('group');
-    dd($groups);
-    // Check user groups and compare with the groups allowed to access the node
-    $allowed_groups = explode(';', $node->cas_groups);
-    foreach($allowed_groups as $allowed_group) {
-      if(in_array($allowed_group, $groups)) {
-        // If we found a matching group, break out of the loop.
-        break;
-      }
-      drupal_access_denied();
-      exit();
+    if(!private_cas_check_group_authorization($node)) {
+      private_cas_deny_access();
     }
   }
   else {
     $logged_in = phpCAS::checkAuthentication();
-
     // We're done cause we're not logged in.
     if (!$logged_in) {
-      drupal_access_denied();
-      exit();
+      private_cas_deny_access();
     }
+  }
+  return TRUE;
+}
+
+/**
+ * Deny access to the content.
+ */
+function private_cas_deny_access() {
+  drupal_access_denied();
+  exit();
+}
+
+/**
+ * Check authorization by group.
+ *
+ * @param $node
+ *   The node to check authorization for.
+ */
+function private_cas_check_group_authorization($node) {
+  // Fetch group node from the attributes
+  $groups = phpCAS::getAttribute('group');
+  // Check user groups and compare with the groups allowed to access the node
+  if(!empty($node->cas_groups)) {
+    $allowed_groups = explode("\n", $node->cas_groups);
+    foreach($allowed_groups as $allowed_group) {
+      if(in_array(trim($allowed_group), $groups)) {
+        // If we found a matching group, grant access
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
   return TRUE;
 }
