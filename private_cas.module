@@ -309,13 +309,21 @@ function private_cas_check_group_authorization($node) {
 
   // Fetch group node from the attributes
   $groups = phpCAS::getAttribute('group');
+
   // Check user groups and compare with the groups allowed to access the node
   if(!empty($node->cas_groups)) {
     $allowed_groups = explode("\n", $node->cas_groups);
     foreach($allowed_groups as $allowed_group) {
-      if(in_array(trim($allowed_group), $groups)) {
-        // If we found a matching group, grant access
-        return TRUE;
+      if(is_array($groups)) {
+        if(in_array(trim($allowed_group), $groups)) {
+          // If we found a matching group, grant access
+          return TRUE;
+        }
+      }
+      else if(is_string($groups)) {
+        if(trim($allowed_group) == $groups) {
+          return TRUE;
+        }
       }
     }
     return FALSE;
